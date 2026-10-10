@@ -8,6 +8,8 @@
     "server": "node api/index.js",
     "client": "npm --prefix client run dev",
     "build": "npm --prefix client run build",
+    "vercel-build": "npm run build",
+    "postinstall": "npm install --prefix client",
     "start": "node api/index.js"
   },
   "keywords": ["mern", "online-exam", "vercel", "react", "express", "mongodb", "nodejs"],
