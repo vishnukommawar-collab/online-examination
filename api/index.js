@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
+const fs = require('fs');
 
 dotenv.config();
 
@@ -38,12 +40,28 @@ apiRouter.use('/exams', examRoutes);
 apiRouter.use('/attempts', attemptRoutes);
 apiRouter.use('/stats', statsRoutes);
 
-// Mount under /api and root fallback (guarantees compatibility with all Vercel rewrite patterns)
+// Mount API routes
 app.use('/api', apiRouter);
-app.use('/', apiRouter);
+
+// Serve the production React build when deployed on a Node host like Render
+const clientDistPath = path.resolve(__dirname, '../dist');
+const hasClientBuild = fs.existsSync(path.join(clientDistPath, 'index.html'));
+if (hasClientBuild) {
+  app.use(express.static(clientDistPath));
+  app.get(/^\/(?!api).*/, (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 // 404 handler for API routes
 app.use((req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ success: false, message: `Route ${req.method} ${req.originalUrl} not found` });
+  }
+  if (hasClientBuild) {
+    return res.sendFile(path.join(clientDistPath, 'index.html'));
+  }
   res.status(404).json({ success: false, message: `Route ${req.method} ${req.originalUrl} not found` });
 });
 
